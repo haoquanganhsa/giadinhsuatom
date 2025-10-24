@@ -13,203 +13,245 @@
     <div id="root"></div>
     
     <script type="text/babel">
-        // Copy     toàn bộ code React từ artifact ở trên vào đây
-        import React, { useState, useEffect } from 'react';
-import { Upload, X, ImageIcon, Calendar } from 'lucide-react';
+        const { useState, useEffect } = React;
 
-export default function MemoryAlbum() {
-  const [photos, setPhotos] = useState([]);
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
+        // Lucide React Icons (inline SVG components)
+        const Upload = () => (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+        );
 
-  // Load photos from storage on mount
-  useEffect(() => {
-    loadPhotos();
-  }, []);
+        const X = () => (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        );
 
-  const loadPhotos = async () => {
-    try {
-      const result = await window.storage.get('memory-photos');
-      if (result && result.value) {
-        setPhotos(JSON.parse(result.value));
-      }
-    } catch (error) {
-      console.log('No photos stored yet');
-      setPhotos([]);
-    }
-  };
+        const ImageIcon = () => (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+            </svg>
+        );
 
-  const savePhotos = async (newPhotos) => {
-    try {
-      await window.storage.set('memory-photos', JSON.stringify(newPhotos));
-    } catch (error) {
-      console.error('Error saving photos:', error);
-    }
-  };
+        const Calendar = () => (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+        );
 
-  const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files);
-    
-    files.forEach(file => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const newPhoto = {
-            id: Date.now() + Math.random(),
-            url: event.target.result,
-            title: file.name.replace(/\.[^/.]+$/, ''),
-            date: new Date().toLocaleDateString('vi-VN'),
-            timestamp: Date.now()
-          };
-          
-          const updatedPhotos = [newPhoto, ...photos];
-          setPhotos(updatedPhotos);
-          savePhotos(updatedPhotos);
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-    
-    e.target.value = '';
-  };
+        function MemoryAlbum() {
+            const [photos, setPhotos] = useState([]);
+            const [selectedPhoto, setSelectedPhoto] = useState(null);
 
-  const deletePhoto = (id) => {
-    const updatedPhotos = photos.filter(p => p.id !== id);
-    setPhotos(updatedPhotos);
-    savePhotos(updatedPhotos);
-    setSelectedPhoto(null);
-  };
+            useEffect(() => {
+                loadPhotos();
+            }, []);
 
-  const updatePhotoTitle = (id, newTitle) => {
-    const updatedPhotos = photos.map(p => 
-      p.id === id ? { ...p, title: newTitle } : p
-    );
-    setPhotos(updatedPhotos);
-    savePhotos(updatedPhotos);
-  };
+            const loadPhotos = () => {
+                try {
+                    const stored = localStorage.getItem('memory-photos');
+                    if (stored) {
+                        setPhotos(JSON.parse(stored));
+                    }
+                } catch (error) {
+                    console.log('No photos stored yet');
+                    setPhotos([]);
+                }
+            };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <ImageIcon className="w-8 h-8 text-purple-600" />
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Album Kỷ Niệm
-              </h1>
-            </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <Calendar className="w-5 h-5" />
-              <span className="text-sm">{photos.length} ảnh</span>
-            </div>
-          </div>
-        </div>
-      </header>
+            const savePhotos = (newPhotos) => {
+                try {
+                    localStorage.setItem('memory-photos', JSON.stringify(newPhotos));
+                } catch (error) {
+                    console.error('Error saving photos:', error);
+                }
+            };
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Upload Section */}
-        <div className="mb-8">
-          <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-purple-300 rounded-2xl cursor-pointer bg-white hover:bg-purple-50 transition-all duration-300 hover:border-purple-500">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <Upload className="w-12 h-12 text-purple-500 mb-3" />
-              <p className="mb-2 text-lg font-semibold text-gray-700">
-                Nhấn để tải ảnh lên
-              </p>
-              <p className="text-sm text-gray-500">
-                PNG, JPG, GIF (tối đa 5MB mỗi ảnh)
-              </p>
-            </div>
-            <input
-              type="file"
-              className="hidden"
-              accept="image/*"
-              multiple
-              onChange={handleFileUpload}
-            />
-          </label>
-        </div>
+            const handleFileUpload = (e) => {
+                const files = Array.from(e.target.files);
+                
+                files.forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const newPhoto = {
+                                id: Date.now() + Math.random(),
+                                url: event.target.result,
+                                title: file.name.replace(/\.[^/.]+$/, ''),
+                                date: new Date().toLocaleDateString('vi-VN'),
+                                timestamp: Date.now()
+                            };
+                            
+                            setPhotos(prevPhotos => {
+                                const updatedPhotos = [newPhoto, ...prevPhotos];
+                                savePhotos(updatedPhotos);
+                                return updatedPhotos;
+                            });
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                
+                e.target.value = '';
+            };
 
-        {/* Photos Grid */}
-        {photos.length === 0 ? (
-          <div className="text-center py-16">
-            <ImageIcon className="w-24 h-24 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">
-              Chưa có ảnh nào. Hãy tải ảnh đầu tiên lên!
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {photos.map((photo) => (
-              <div
-                key={photo.id}
-                className="group relative bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
-                onClick={() => setSelectedPhoto(photo)}
-              >
-                <div className="aspect-square overflow-hidden">
-                  <img
-                    src={photo.url}
-                    alt={photo.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
+            const deletePhoto = (id) => {
+                const updatedPhotos = photos.filter(p => p.id !== id);
+                setPhotos(updatedPhotos);
+                savePhotos(updatedPhotos);
+                setSelectedPhoto(null);
+            };
+
+            const updatePhotoTitle = (id, newTitle) => {
+                const updatedPhotos = photos.map(p => 
+                    p.id === id ? { ...p, title: newTitle } : p
+                );
+                setPhotos(updatedPhotos);
+                savePhotos(updatedPhotos);
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+                    <header className="bg-white shadow-sm sticky top-0 z-10">
+                        <div className="max-w-7xl mx-auto px-4 py-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 text-purple-600">
+                                        <ImageIcon />
+                                    </div>
+                                    <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                        Album Kỷ Niệm
+                                    </h1>
+                                </div>
+                                <div className="flex items-center gap-2 text-gray-600">
+                                    <div className="w-5 h-5">
+                                        <Calendar />
+                                    </div>
+                                    <span className="text-sm">{photos.length} ảnh</span>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-4 py-8">
+                        <div className="mb-8">
+                            <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-purple-300 rounded-2xl cursor-pointer bg-white hover:bg-purple-50 transition-all duration-300 hover:border-purple-500">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <div className="w-12 h-12 text-purple-500 mb-3">
+                                        <Upload />
+                                    </div>
+                                    <p className="mb-2 text-lg font-semibold text-gray-700">
+                                        Nhấn để tải ảnh lên
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                        PNG, JPG, GIF (tối đa 5MB mỗi ảnh)
+                                    </p>
+                                </div>
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleFileUpload}
+                                />
+                            </label>
+                        </div>
+
+                        {photos.length === 0 ? (
+                            <div className="text-center py-16">
+                                <div className="w-24 h-24 text-gray-300 mx-auto mb-4">
+                                    <ImageIcon />
+                                </div>
+                                <p className="text-gray-500 text-lg">
+                                    Chưa có ảnh nào. Hãy tải ảnh đầu tiên lên!
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                {photos.map((photo) => (
+                                    <div
+                                        key={photo.id}
+                                        className="group relative bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
+                                        onClick={() => setSelectedPhoto(photo)}
+                                    >
+                                        <div className="aspect-square overflow-hidden">
+                                            <img
+                                                src={photo.url}
+                                                alt={photo.title}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                            />
+                                        </div>
+                                        <div className="p-4">
+                                            <p className="font-semibold text-gray-800 truncate">
+                                                {photo.title}
+                                            </p>
+                                            <p className="text-sm text-gray-500 mt-1">{photo.date}</p>
+                                        </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                deletePhoto(photo.id);
+                                            }}
+                                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-600"
+                                        >
+                                            <div className="w-4 h-4">
+                                                <X />
+                                            </div>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </main>
+
+                    {selectedPhoto && (
+                        <div
+                            className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+                            onClick={() => setSelectedPhoto(null)}
+                        >
+                            <div
+                                className="relative max-w-5xl max-h-full"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <button
+                                    onClick={() => setSelectedPhoto(null)}
+                                    className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+                                >
+                                    <div className="w-8 h-8">
+                                        <X />
+                                    </div>
+                                </button>
+                                <img
+                                    src={selectedPhoto.url}
+                                    alt={selectedPhoto.title}
+                                    className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                                />
+                                <div className="mt-4 bg-white rounded-lg p-4">
+                                    <input
+                                        type="text"
+                                        value={selectedPhoto.title}
+                                        onChange={(e) => updatePhotoTitle(selectedPhoto.id, e.target.value)}
+                                        className="w-full text-xl font-semibold border-b-2 border-transparent focus:border-purple-500 outline-none px-2 py-1"
+                                    />
+                                    <p className="text-gray-500 mt-2 px-2">{selectedPhoto.date}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-                <div className="p-4">
-                  <p className="font-semibold text-gray-800 truncate">
-                    {photo.title}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">{photo.date}</p>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deletePhoto(photo.id);
-                  }}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
+            );
+        }
 
-      {/* Photo Modal */}
-      {selectedPhoto && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedPhoto(null)}
-        >
-          <div
-            className="relative max-w-5xl max-h-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setSelectedPhoto(null)}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
-            >
-              <X className="w-8 h-8" />
-            </button>
-            <img
-              src={selectedPhoto.url}
-              alt={selectedPhoto.title}
-              className="max-w-full max-h-[80vh] object-contain rounded-lg"
-            />
-            <div className="mt-4 bg-white rounded-lg p-4">
-              <input
-                type="text"
-                value={selectedPhoto.title}
-                onChange={(e) => updatePhotoTitle(selectedPhoto.id, e.target.value)}
-                className="w-full text-xl font-semibold border-b-2 border-transparent focus:border-purple-500 outline-none px-2 py-1"
-              />
-              <p className="text-gray-500 mt-2 px-2">{selectedPhoto.date}</p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+        ReactDOM.render(<MemoryAlbum />, document.getElementById('root'));
     </script>
 </body>
 </html>
