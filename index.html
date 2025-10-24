@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Album Kỷ Niệm</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        // Copy     toàn bộ code React từ artifact ở trên vào đây
+        import React, { useState, useEffect } from 'react';
+import { Upload, X, ImageIcon, Calendar } from 'lucide-react';
+
+export default function MemoryAlbum() {
+  const [photos, setPhotos] = useState([]);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+
+  // Load photos from storage on mount
+  useEffect(() => {
+    loadPhotos();
+  }, []);
+
+  const loadPhotos = async () => {
+    try {
+      const result = await window.storage.get('memory-photos');
+      if (result && result.value) {
+        setPhotos(JSON.parse(result.value));
+      }
+    } catch (error) {
+      console.log('No photos stored yet');
+      setPhotos([]);
+    }
+  };
+
+  const savePhotos = async (newPhotos) => {
+    try {
+      await window.storage.set('memory-photos', JSON.stringify(newPhotos));
+    } catch (error) {
+      console.error('Error saving photos:', error);
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files);
+    
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const newPhoto = {
+            id: Date.now() + Math.random(),
+            url: event.target.result,
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            date: new Date().toLocaleDateString('vi-VN'),
+            timestamp: Date.now()
+          };
+          
+          const updatedPhotos = [newPhoto, ...photos];
+          setPhotos(updatedPhotos);
+          savePhotos(updatedPhotos);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    e.target.value = '';
+  };
+
+  const deletePhoto = (id) => {
+    const updatedPhotos = photos.filter(p => p.id !== id);
+    setPhotos(updatedPhotos);
+    savePhotos(updatedPhotos);
+    setSelectedPhoto(null);
+  };
+
+  const updatePhotoTitle = (id, newTitle) => {
+    const updatedPhotos = photos.map(p => 
+      p.id === id ? { ...p, title: newTitle } : p
+    );
+    setPhotos(updatedPhotos);
+    savePhotos(updatedPhotos);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ImageIcon className="w-8 h-8 text-purple-600" />
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Album Kỷ Niệm
+              </h1>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Calendar className="w-5 h-5" />
+              <span className="text-sm">{photos.length} ảnh</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Upload Section */}
+        <div className="mb-8">
+          <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-purple-300 rounded-2xl cursor-pointer bg-white hover:bg-purple-50 transition-all duration-300 hover:border-purple-500">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <Upload className="w-12 h-12 text-purple-500 mb-3" />
+              <p className="mb-2 text-lg font-semibold text-gray-700">
+                Nhấn để tải ảnh lên
+              </p>
+              <p className="text-sm text-gray-500">
+                PNG, JPG, GIF (tối đa 5MB mỗi ảnh)
+              </p>
+            </div>
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*"
+              multiple
+              onChange={handleFileUpload}
+            />
+          </label>
+        </div>
+
+        {/* Photos Grid */}
+        {photos.length === 0 ? (
+          <div className="text-center py-16">
+            <ImageIcon className="w-24 h-24 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">
+              Chưa có ảnh nào. Hãy tải ảnh đầu tiên lên!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {photos.map((photo) => (
+              <div
+                key={photo.id}
+                className="group relative bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
+                onClick={() => setSelectedPhoto(photo)}
+              >
+                <div className="aspect-square overflow-hidden">
+                  <img
+                    src={photo.url}
+                    alt={photo.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-4">
+                  <p className="font-semibold text-gray-800 truncate">
+                    {photo.title}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">{photo.date}</p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deletePhoto(photo.id);
+                  }}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Photo Modal */}
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <div
+            className="relative max-w-5xl max-h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img
+              src={selectedPhoto.url}
+              alt={selectedPhoto.title}
+              className="max-w-full max-h-[80vh] object-contain rounded-lg"
+            />
+            <div className="mt-4 bg-white rounded-lg p-4">
+              <input
+                type="text"
+                value={selectedPhoto.title}
+                onChange={(e) => updatePhotoTitle(selectedPhoto.id, e.target.value)}
+                className="w-full text-xl font-semibold border-b-2 border-transparent focus:border-purple-500 outline-none px-2 py-1"
+              />
+              <p className="text-gray-500 mt-2 px-2">{selectedPhoto.date}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+    </script>
+</body>
+</html>
